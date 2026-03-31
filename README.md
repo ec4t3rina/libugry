@@ -1,5 +1,7 @@
 # libugry
 
+(DONT WORRY I WILL MODIFY THIS AI SLOP AHH README I JUST WANTED TO POST THE REPO FASTER + TO HAVE THE QUICKSTART ON HERE!!)
+
 Context-aware Python library dependency advisor. Where pip asks "does this version exist?", libugry asks "which version should I use on **this exact machine**, and **why**?"
 
 Standard package managers operate on a **State Clock** — static PyPI metadata. libugry operates on an **Event Clock** — a Neo4j Context Graph that stores observed reality: crash history per OS/arch/Python, verified working combinations, CVE vulnerabilities, license types, and the full reasoning trace of every past decision. The graph gets smarter with every install.
