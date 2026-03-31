@@ -1,0 +1,129 @@
+libugry — QUICKSTART
+====================
+
+PREREQUISITES
+-------------
+  - Docker + Docker Compose
+  - Python 3.9+
+  - An Anthropic API key (https://console.anthropic.com)
+
+FIRST-TIME SETUP
+----------------
+1. Fill in credentials:
+
+     Edit .env:
+       ANTHROPIC_API_KEY=sk-ant-...
+       NEO4J_PASSWORD=changeme   ← pick something
+
+2. Start Neo4j:
+
+     docker compose up -d
+
+     Wait ~15s. Browser UI: http://localhost:7474  (neo4j / <your password>)
+
+3. Create and activate a virtual environment:
+
+     python3 -m venv .venv
+     source .venv/bin/activate       # macOS/Linux
+     # .venv\Scripts\activate        # Windows
+
+4. Install dependencies:
+
+     pip install -r requirements.txt
+
+5. Initialize schema and seed:
+
+     python main.py init    ← creates constraints/indexes in Neo4j
+     python main.py seed    ← loads foundational data: 13 libraries, crash events
+                               with CrashCause nodes, compat records, known bundles
+
+DAILY USE (after first-time setup)
+-----------------------------------
+If Neo4j isn't running (after a restart):
+
+     docker compose up -d
+
+Activate the venv:
+
+     source .venv/bin/activate
+
+Then use any command below.
+
+PRIMARY INTERFACE
+-----------------
+  python main.py
+    → Natural language REPL. Ask anything about libraries:
+
+      > I need pandas and scikit-learn for a data pipeline
+      > why does scipy crash on my machine?
+      > assess numpy + torch compatibility
+      > install requests
+
+    Type 'exit' to quit.
+
+SUBCOMMANDS
+-----------
+  python main.py query <lib> [<lib2> ...]
+    → Recommend versions (no install). Accepts multiple libraries at once.
+    → Examples:
+        python main.py query scipy
+        python main.py query scipy numpy matplotlib
+        python main.py query pandas scikit-learn --project "ML pipeline"
+
+  python main.py install <library>
+    → Navigate → confirm → sandbox test → write outcome to graph
+    → Example: python main.py install pandas
+
+  python main.py history <library>
+    → Table of past decisions + outcomes (shows crash cause category + fix)
+    → Example: python main.py history scipy
+
+  python main.py graph <library> [--version X.Y.Z]
+    → Dependency tree for a library version
+    → Example: python main.py graph scipy
+
+  python main.py init
+    → (Re-)apply Neo4j schema constraints. Safe to run multiple times.
+
+  python main.py seed
+    → Load foundational seed data. Safe to re-run (uses MERGE).
+
+HOW IT WORKS
+------------
+  1. env_detector.py detects your OS/arch/Python (e.g. macos arm64 3.9)
+  2. agents/navigator.py asks Claude to walk the graph via tool-use:
+       - CVEs via OSV.dev (checked first — HIGH/CRITICAL override everything)
+       - Crash records with WHY (missing system dep, arch incompatible, etc.)
+       - Verified compatible versions for your exact environment
+       - License type (flags copyleft)
+       - Dependency tree + cross-library conflict detection
+       - Known working bundles (verified combinations of multiple libraries)
+       - Past decision history
+     Claude's graph queries print live to the terminal.
+  3. A Decision node is written to Neo4j with the full tool call trace
+     (provenance: which graph queries Claude ran and in what order).
+  4. (install only) sandbox.py creates a temp venv, runs pip install,
+     captures the result.
+  5. agents/feedback.py classifies the crash cause (regex first, Claude
+     haiku fallback) and writes CrashCause + Outcome nodes to the graph.
+
+The more installs you run, the more confident future recommendations become.
+
+TROUBLESHOOTING
+---------------
+  "Cannot connect to Neo4j"
+    → docker compose up -d  (wait ~15s)
+
+  "Authentication failed"
+    → Check NEO4J_PASSWORD in .env matches what you set initially
+
+  "command not found: pip" or "command not found: python"
+    → source .venv/bin/activate
+
+  "credit balance is too low"
+    → Add credits at https://console.anthropic.com
+
+  Want to reset the graph entirely?
+    → docker compose down -v   (destroys all data)
+    → docker compose up -d
+    → python main.py init && python main.py seed

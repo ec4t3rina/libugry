@@ -1,0 +1,7 @@
+neo4j>=5.0
+anthropic>=0.40
+python-dotenv
+click
+rich
+streamlit>=1.35
+streamlit-agraph>=0.0.45
