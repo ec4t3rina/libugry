@@ -1,4 +1,4 @@
-# libugry
+# libugry (library + bug haha get it get it </3)
 
 (DONT WORRY I WILL MODIFY THIS AI SLOP AHH README I JUST WANTED TO POST THE REPO FASTER + TO HAVE THE QUICKSTART ON HERE!!)
 
